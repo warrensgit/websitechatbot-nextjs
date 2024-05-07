@@ -1,7 +1,7 @@
 // components/Chatbot.tsx
 
 import React, { useState } from 'react';
-import styles from '../styles/Chatbot.module.css';
+import styles from '../styles/Home.module.css';
 
 const Chatbot: React.FC = () => {
 	const [userInput, setUserInput] = useState('');
