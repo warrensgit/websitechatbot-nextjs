@@ -1,18 +1,19 @@
 // components/Chatbot.tsx
-
 import React, { useState } from 'react';
-import styles from '../styles/Home.module.css';
+import styles from '../styles/Home.module.css';  // Ensure you will update this to correct path if needed
 
 const Chatbot: React.FC = () => {
 	const [userInput, setUserInput] = useState('');
 	const [chatHistory, setChatHistory] = useState<{ user: string; bot: string }[]>([]);
+	const [isVisible, setIsVisible] = useState(false); // State to manage visibility of the chatbot
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!userInput.trim()) return;
 
 		// Add user message to chat history
-		setChatHistory((prevHistory) => [...prevHistory, { user: userInput, bot: '' }]);
+		const newUserMessage = { user: userInput, bot: '' };
+		setChatHistory((prevHistory) => [...prevHistory, newUserMessage]);
 
 		try {
 			const response = await fetch('/api/respond', {
@@ -20,14 +21,15 @@ const Chatbot: React.FC = () => {
 				headers: {
 					'Content-Type': 'application/json',
 				},
-				body: JSON.stringify({ message: userInput, chat_history: chatHistory }),
+				body: JSON.stringify({ message: userInput }),
 			});
 
 			const data = await response.json();
-			// Add bot response to chat history
+			// Update chat history with bot response
 			setChatHistory((prevHistory) => {
-				const lastMessage = prevHistory[prevHistory.length - 1];
-				return [...prevHistory.slice(0, -1), { ...lastMessage, bot: data.bot_message }];
+				const lastIndex = prevHistory.length - 1;
+				const lastMessage = { ...prevHistory[lastIndex], bot: data.bot_message };
+				return [...prevHistory.slice(0, -1), lastMessage];
 			});
 		} catch (error) {
 			console.error('Error:', error);
@@ -37,29 +39,38 @@ const Chatbot: React.FC = () => {
 	};
 
 	return (
-		<div className={styles.chatbot}>
-			<div className={styles.messageList}>
-				{chatHistory.map((message, index) => (
-					<div key={index}>
-						<div className={styles.userMessage}>{message.user}</div>
-						<div className={styles.botMessage}>{message.bot}</div>
+		<>
+			<button className={styles.chatbotToggler} onClick={() => setIsVisible(!isVisible)}>
+				<span className="material-symbols-rounded">mode_comment</span>
+				<span className="material-symbols-outlined">close</span>
+			</button>
+			{isVisible && (
+				<div className={styles.chatbot}>
+					<header>
+						<h2>Chatbot</h2>
+						<span className={styles.closeBtn} onClick={() => setIsVisible(false)}>close</span>
+					</header>
+					<ul className={styles.chatbox}>
+						{chatHistory.map((message, index) => (
+							<li key={index} className={message.user ? styles.outgoing : styles.incoming}>
+								{message.bot && <span className="material-symbols-outlined">smart_toy</span>}
+								<p>{message.user || message.bot}</p>
+							</li>
+						))}
+					</ul>
+					<div className={styles.chatInput}>
+						<textarea
+							value={userInput}
+							onChange={(e) => setUserInput(e.target.value)}
+							placeholder="Enter a message..."
+							spellCheck="false"
+							required
+						/>
+						<span onClick={handleSubmit} className="material-symbols-rounded">send</span>
 					</div>
-				))}
-			</div>
-			<form onSubmit={handleSubmit} className={styles.chatForm}>
-				<textarea
-					value={userInput}
-					onChange={(e) => setUserInput(e.target.value)}
-					placeholder="Type your question..."
-					className={styles.textarea}
-					maxLength={512}
-					rows={1}
-				/>
-				<button type="submit" className={styles.generateButton}>
-					Send
-				</button>
-			</form>
-		</div>
+				</div>
+			)}
+		</>
 	);
 };
 
